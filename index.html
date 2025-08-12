@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色立繪展示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(310deg, #07000a 0%, #2a0039 50%, #000000 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: white;
+        }
+
+        .main-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .showcase-wrapper {
+            width: 90vw;
+            max-width: 1200px;
+            height: 80vh;
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        .character-section {
+            position: absolute;
+            height: 100%;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        /* 全背景圖片層 - 改為放大效果 */
+        .background-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0;
+            transform: scale(1);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1;
+        }
+
+        .background-layer.active {
+            opacity: 0.9;
+            transform: scale(1.1);
+        }
+
+        /* 斜邊切割效果 - 統一使用 cover 和 center */
+        .section-1 {
+            left: 0;
+            width: 28%;
+            clip-path: polygon(0 0, 90% 0, 90% 100%, 0 100%);
+            background-image: url('./student.png');
+            background-position: center center;
+            background-size: cover;
+            z-index: 10;
+        }
+
+        .section-2 {
+            left: 24%;
+            width: 28%;
+            clip-path: polygon(1% 0, 100% 0, 90% 100%, 0 100%);
+            background-image: url('./plumber.png');
+            background-position: center center;
+            background-size: cover;
+            z-index: 10;
+        }
+
+        .section-3 {
+            left: 48%;
+            width: 28%;
+            clip-path: polygon(15% 0, 90% 0, 100% 100%, 0 100%);
+            background-image: url('./surfur.png');
+            background-position: center center;
+            background-size: cover;
+            z-index: 10;
+        }
+
+        .section-4 {
+            left: 72%;
+            width: 28%;
+            clip-path: polygon(-0% 0, 100% 0, 100% 100%, 9% 100%);
+            background-image: url('./police.png');
+            background-position: center center;
+            background-size: cover;
+            z-index: 10;
+        }
+
+        /* 背景層統一設定 */
+        #bg-1 {
+            background-position: center center;
+            background-size: cover;
+        }
+
+        #bg-2 {
+            background-position: center center;
+            background-size: cover;
+        }
+
+        #bg-3 {
+            background-position: center center;
+            background-size: cover;
+        }
+
+        #bg-4 {
+            background-position: center center;
+            background-size: cover;
+        }
+
+        .character-content {
+            position: relative;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 40px 20px;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+            transition: all 0.4s ease;
+            z-index: 15;
+        }
+
+        .character-image {
+            display: none; /* 隱藏小圖片 */
+        }
+
+        .character-info {
+            text-align: center;
+            z-index: 10;
+        }
+
+        .character-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        }
+
+        .character-age {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            background: rgba(0,0,0,0.4);
+            padding: 4px 12px;
+            border-radius: 15px;
+        }
+
+        .character-desc {
+            font-size: 12px;
+            opacity: 0.8;
+            line-height: 1.4;
+        }
+
+        /* Hover效果 - 增強放大感 */
+        .character-section:hover {
+            transform: scale(1.05);
+            z-index: 100;
+            filter: brightness(1.1);
+        }
+
+        .character-section:hover .character-content {
+            background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
+        }
+
+        /* 非hover狀態的區塊變暗 */
+        .character-section.dimmed {
+            opacity: 0.4;
+            filter: grayscale(0.3);
+        }
+
+        /* 步驟二：底部彈出框 */
+        .bottom-panel {
+            position: absolute;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 80px;
+            background: rgba(8, 2, 13, 0.9);
+            border-radius: 40px;
+            backdrop-filter: blur(10px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            z-index: 150;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(6, 1, 11, 0.3);
+        }
+
+        .bottom-panel.show {
+            bottom: 20px;
+            opacity: 1;
+        }
+
+        .bottom-panel-text {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* 步驟三：滑動展開的詳細頁面 */
+        .details-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0);
+            backdrop-filter: blur(5px);
+            z-index: 300;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .details-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .details-container {
+            width: 80%;
+            max-width: 800px;
+            height: 70%;
+            background: rgba(7, 5, 22, 0.95);
+            border-radius: 30px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            /* 從底部小框框的位置開始 */
+            transform: translateY(calc(50vh + 200px)) scaleY(0.1);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            position: relative;
+            transform-origin: bottom;
+        }
+
+        .details-overlay.show .details-container {
+            transform: translateY(0) scaleY(1);
+        }
+
+        .details-scroll {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .details-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .details-scroll::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+
+        .details-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+        }
+
+        .details-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        .detail-card {
+            background: rgba(185 ,175,190 ,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            color: #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 25px;
+            min-height: 180px;
+        }
+
+        .detail-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #1a101e;
+            padding-bottom: 8px;
+        }
+
+        .card-content {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #33273b;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .copy-btn:hover {
+            background: #604f68;
+            transform: scale(1.1);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(223,208,228,0.2);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .showcase-wrapper {
+                width: 95vw;
+                height: 90vh;
+            }
+            
+            .character-name {
+                font-size: 18px;
+            }
+            
+            .character-age {
+                font-size: 14px;
+            }
+            
+            .character-desc {
+                font-size: 11px;
+            }
+        }
+
+        /* 標題 */
+        .main-title {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+            z-index: 200;
+            color: white;
+        }
+
+        /* 裝飾元素 */
+        .decoration {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .decoration::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: float 20s linear infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(-50px, -50px) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="showcase-wrapper">
+            <div class="main-title"></div>
+            <div class="decoration"></div>
+            
+            <!-- 背景圖片層 -->
+            <div class="background-layer" id="bg-1" style="background-image: url('./student_banner.png');"></div>
+            <div class="background-layer" id="bg-2" style="background-image: url('./plumber_banner.png');"></div>
+            <div class="background-layer" id="bg-3" style="background-image: url('./surfur_banner.png');"></div>
+            <div class="background-layer" id="bg-4" style="background-image: url('./police_banner.png');"></div>
+            
+            <div class="character-section section-1" data-bg="bg-1">
+                <div class="character-content">
+                    <div class="character-info">
+                        <div class="character-name">張和聿</div>
+                        <div class="character-age">20歲</div>
+                        <div class="character-desc">佔有欲<br>綁縛<br>大學生</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="character-section section-2" data-bg="bg-2">
+                <div class="character-content">
+                    <div class="character-info">
+                        <div class="character-name">羅恣晏</div>
+                        <div class="character-age">27歲</div>
+                        <div class="character-desc">本能<br>很多<br>水電工</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="character-section section-3" data-bg="bg-3">
+                <div class="character-content">
+                    <div class="character-info">
+                        <div class="character-name">鄭煜凱</div>
+                        <div class="character-age">32歲</div>
+                        <div class="character-desc">易⤴<br>易⤴<br>衝浪教練</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="character-section section-4" data-bg="bg-4">
+                <div class="character-content">
+                    <div class="character-info">
+                        <div class="character-name">蕭萬斌</div>
+                        <div class="character-age">45歲</div>
+                        <div class="character-desc">離婚<br>入珠<br>警察局長</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 步驟二：底部彈出框 -->
+            <div class="bottom-panel" id="bottomPanel">
+                <div class="bottom-panel-text" id="bottomPanelText">點擊查看詳細資訊</div>
+            </div>
+        </div>
+
+        <!-- 步驟三：滑動展開的詳細頁面 -->
+        <div class="details-overlay" id="detailsOverlay">
+            <div class="details-container" id="detailsContainer">
+                <div class="details-scroll" id="detailsScroll">
+                    <!-- 動態生成的卡片對會在這裡 -->
+                </div>
+                <button class="close-btn" id="closeBtn">×</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCharacter = null;
+        
+        // 角色詳細資訊 - 只保留大卡片內容
+        const characterDetails = {
+            '張和聿': {
+                cards: [
+                    { title: 'Model & Lora & Function', content: 'Rosebud V1 \n- LCM&TurboMix LoRA (eular a.fix) XL\n- male face\n- hansome boy model' },
+                    { title: 'Prompt', content: '((only one man in scene)), solo, single person, mature male, short hair, fade haircut, buzz cut sides, black hair with blonde tips, ombre blonde ends, undercut fade, short sides long top, tousled messy short hair on top, side swept bangs, amber golden eyes, gentle closed mouth smile, modern fade cut, university t-shirt, handsome, downturned eyes, detailed background, moody atmosphere, soft color, Handsome, &lt;lora:LCMTurboMix2fix:1&gt;,,downturned eyes, detailed background, moody atmosphere, soft color' },
+                    { title: 'Negative Prompt', content: 'nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, quality bad, hands bad, eyes bad, face bad, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name, nsfw, two people' }
+                ]
+            },
+            '羅恣晏': {
+                cards: [
+                    { title: 'Model & Lora & Function', content: 'Rosebud V1 \n- LCM&TurboMix LoRA (eular a.fix) XL\n- Danfeng Eyes Pony\n- hansome boy model\n- male face\n- Muscle Body 2.0\nFacial reconstruction' },
+                    { title: 'Prompt', content: '32-year-old tall very muscular modern man, dark eye, black hair, mature male,  side swept bangs, asymmetrical fringe, messy short top knot, loose short hair bun on top, completely clean shaven, diagonal bangs, angled front hair, smooth hairless face, bulky build, broad shoulders, burly strong build, serious stoic expression, direct forward gaze, ((normal eyes)), ((well-defined eyes)), ((neutral face not smiling)), contemporary clothing, handsome, clear bright eyes, detailed background, moody atmosphere, soft color, muscle' },
+                    { title: 'Negative Prompt', content: 'nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, quality bad, hands bad, eyes bad, face bad, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name, nsfw, error eye, multiple people, weird eyes, deformed eyes, asymmetrical eyes, crossed eyes, strange pupils' }
+                ]
+            },
+            '鄭煜凱': {
+                cards: [
+                    { title: 'Model & Lora & Function', content: 'Rosebud V1 \n- LCM&TurboMix LoRA (eular a.fix) XL\n- Danfeng Eyes Pony\n- hansome boy model\n- male face\n- Muscle Body 2.0\nFacial reconstruction' },
+                    { title: 'Prompt', content: '32-year-old surf instructor, platinum blonde highlights on dark hair, bleached blonde streaks, high contrast hair color, natural tan, lightly tanned skin, healthy sun-kissed complexion, warm skin tone, quiff hairstyle, dramatic blonde and brown hair, front view, smiling, beach background, shirt worn open, natural athletic physique, handsome, clear bright eyes, detailed background, moody atmosphere, ((soft color)), ((muscle)), ((danfeng eyes)),&lt;lora:LCMTurboMix2fix:1&gt;' },
+                    { title: 'Negative Prompt', content: 'nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, quality bad, hands bad, eyes bad, face bad, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name, nsfw, error eye, multiple people, weird eyes, deformed eyes, asymmetrical eyes, crossed eyes, strange pupils' }
+                ]
+            },
+            '蕭萬斌': {
+                cards: [
+                    { title: 'Model & Lora & Function', content: 'Rosebud V1 \n- LCM&TurboMix LoRA (eular a.fix) XL\n- hansome boy model\n- male face\n- Muscle Body 2.0\nFacial reconstruction' },
+                    { title: 'Prompt', content: '45-year-old police chief, mature male, extreme low angle, from directly below, looking up at character, staring at view,  slicked back hair with loose strands over left eye, swept back hairstyle with face-framing bangs, hair partially covering left eye, executive style hair, sophisticated appearance, light stubble, well-groomed facial hair, 5 o\'clock shadow, trimmed short beard, slight smirk, confident expression, charming look, police uniform, mature businessman hairstyle, very low angle, upward perspective, professional stubble, detailed hair texture, professional appearance, sharp features, handsome, black eyes, dark eyes, detailed background, moody atmosphere, ((soft color)), ((muscle)), danfeng eyes,&lt;lora:LCMTurboMix2fix:1&gt;, 30 model face' },
+                    { title: 'Negative Prompt', content: 'nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, quality bad, hands bad, eyes bad, face bad, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name, nsfw, error eye, multiple people, weird eyes, deformed eyes, asymmetrical eyes, crossed eyes, strange pupils, messy hair, completely swept back hair, young, youthful, baby face, smooth skin, teenage, boyish' }
+                ]
+            }
+        };
+
+        // 原有的背景放大效果（步驟一）
+        document.querySelectorAll('.character-section').forEach(section => {
+            // 滑鼠進入效果
+            section.addEventListener('mouseenter', function() {
+                // 隱藏所有背景
+                document.querySelectorAll('.background-layer').forEach(bg => {
+                    bg.classList.remove('active');
+                });
+                
+                // 顯示並放大對應背景
+                const bgId = this.getAttribute('data-bg');
+                const targetBg = document.getElementById(bgId);
+                targetBg.classList.add('active');
+                
+                // 其他區域變暗並縮小
+                document.querySelectorAll('.character-section').forEach(other => {
+                    if (other !== this) {
+                        other.classList.add('dimmed');
+                        other.style.transform = 'scale(0.95)';
+                    }
+                });
+                
+                // 當前區域放大
+                this.style.transform = 'scale(1.05)';
+                this.style.filter = 'brightness(1.2) contrast(1.1)';
+            });
+
+            // 滑鼠離開效果
+            section.addEventListener('mouseleave', function() {
+                // 延遲隱藏背景
+                setTimeout(() => {
+                    if (!document.querySelector('.character-section:hover')) {
+                        document.querySelectorAll('.background-layer').forEach(bg => {
+                            bg.classList.remove('active');
+                        });
+                    }
+                }, 100);
+                
+                // 恢復所有區域狀態
+                document.querySelectorAll('.character-section').forEach(other => {
+                    other.classList.remove('dimmed');
+                    other.style.transform = 'scale(1)';
+                    other.style.filter = 'none';
+                });
+            });
+
+            // 步驟二：點擊顯示底部面板
+            section.addEventListener('click', function() {
+                const characterName = this.querySelector('.character-name').textContent;
+                currentCharacter = characterName;
+                
+                // 更新底部面板文字
+                document.getElementById('bottomPanelText').textContent = `查看 ${characterName} 的詳細資訊`;
+                
+                // 顯示底部面板
+                document.getElementById('bottomPanel').classList.add('show');
+                
+                // 點擊效果
+                this.style.transform = 'scale(1.08)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1.05)';
+                }, 150);
+            });
+        });
+
+        // 步驟三：底部面板點擊事件
+        document.getElementById('bottomPanel').addEventListener('click', function() {
+            if (currentCharacter && characterDetails[currentCharacter]) {
+                showDetailPage(characterDetails[currentCharacter].cards);
+                this.classList.remove('show');
+            }
+        });
+
+        // 顯示詳細頁面
+        function showDetailPage(cards) {
+            const scrollContainer = document.getElementById('detailsScroll');
+            scrollContainer.innerHTML = '';
+            
+            cards.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'detail-card';
+                cardElement.innerHTML = `
+                    <button class="copy-btn" onclick="copyText('${card.content.replace(/'/g, "\\'")}')">📋</button>
+                    <div class="card-title">${card.title}</div>
+                    <div class="card-content">${card.content.replace(/\n/g, '<br>')}</div>
+                `;
+                
+                scrollContainer.appendChild(cardElement);
+            });
+            
+            document.getElementById('detailsOverlay').classList.add('show');
+        }
+
+        // 複製文字功能
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // 簡單的複製成功提示
+                const btn = event.target;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✓';
+                btn.style.background = '#27ae60';
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '#3498db';
+                }, 1000);
+            });
+        }
+
+        // 關閉詳細資訊
+        document.getElementById('closeBtn').addEventListener('click', function() {
+            document.getElementById('detailsOverlay').classList.remove('show');
+        });
+
+        // 點擊覆蓋層關閉
+        document.getElementById('detailsOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('show');
+            }
+        });
+
+        // 隱藏底部面板（點擊其他地方）
+        document.addEventListener('click', function(e) {
+            const bottomPanel = document.getElementById('bottomPanel');
+            const isClickInsideCharacter = e.target.closest('.character-section');
+            const isClickInsidePanel = e.target.closest('.bottom-panel');
+            
+            if (!isClickInsideCharacter && !isClickInsidePanel && bottomPanel.classList.contains('show')) {
+                bottomPanel.classList.remove('show');
+            }
+        });
+
+        // 鍵盤導航
+        document.addEventListener('keydown', function(e) {
+            const sections = document.querySelectorAll('.character-section');
+            const currentFocus = document.querySelector('.character-section:focus') || sections[0];
+            let currentIndex = Array.from(sections).indexOf(currentFocus);
+
+            if (e.key === 'ArrowLeft' && currentIndex > 0) {
+                sections[currentIndex - 1].focus();
+                sections[currentIndex - 1].click();
+            } else if (e.key === 'ArrowRight' && currentIndex < sections.length - 1) {
+                sections[currentIndex + 1].focus();
+                sections[currentIndex + 1].click();
+            } else if (e.key === 'Escape') {
+                document.getElementById('detailsOverlay').classList.remove('show');
+                document.getElementById('bottomPanel').classList.remove('show');
+            }
+        });
+
+        // 讓第一個區域可聚焦
+        document.querySelector('.character-section').setAttribute('tabindex', '0');
+    </script>
+</body>
+</html>
